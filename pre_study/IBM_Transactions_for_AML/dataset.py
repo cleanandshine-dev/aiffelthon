@@ -153,35 +153,30 @@ class AMLtoGraph(InMemoryDataset):
         ## node_df: 노드 특성 (예: 평균 송금/수금 금액).
         ## node_label: 불법 거래 여부.
 
-    def process(self):
-        df = pd.read_csv(self.raw_paths[0])
-        df, receiving_df, paying_df, currency_ls = self.preprocess(df)
-        accounts = self.get_all_account(df)
-        node_attr, node_label = self.get_node_attr(currency_ls, paying_df,receiving_df, accounts)
-        edge_attr, edge_index = self.get_edge_df(accounts, df)
 
-# ############################################################## 2025.02.19 ################################################################
-        # NetworkX 그래프 생성
-        nx_graph = nx.Graph() # or nx.DiGraph() depending on your graph directionality
-        edge_list = edge_index.t().tolist() # edge_index를 NetworkX edge 형식으로 변환
-        nx_graph.add_edges_from(edge_list)
-
-        # ----- [중심성(Centrality) 계산 (Betweenness Centrality ) 추가 시작] -----
+####### networkX 의 계좌중심성 지표(3) / 자금세탁 패턴 지표(6) 함수 시작 ##############
+## networkX 의 계좌중심성 지표(3) 시작 ###############################################
+    def get_betweenness_tensor(nx_graph, accounts) :
         betweenness_centrality = nx.betweenness_centrality(nx_graph)
         # 중심성 Feature Node Feature에 추가
+
         betweenness_values = [betweenness_centrality.get(i, 0) for i in range(accounts.shape[0])] # 각 노드에 대한 betweenness 값 추출, 없는 경우 0으로 처리
         betweenness_tensor = torch.tensor(betweenness_values, dtype=torch.float).unsqueeze(1) # tensor로 변환 및 차원 조정
-        node_attr = torch.cat([node_attr, betweenness_tensor], dim=1) # 기존 node_attr에 중심성 feature 연결
-        # ----- [중심성(Centrality) 계산 (Betweenness Centrality ) 추가 끝] -----
 
-        # ----- [연결 중심성 (Degree Centrality) 추가 시작] -----
+        return betweenness_tensor
+    # end of def get_betweenness_tensor
+
+    def get_degree_tensor(nx_graph, accounts) :
         degree_centrality = nx.degree_centrality(nx_graph)
+        # 연결 중심성 (Degree Centrality)
+
         degree_values = [degree_centrality.get(i, 0) for i in range(accounts.shape[0])]
         degree_tensor = torch.tensor(degree_values, dtype=torch.float).unsqueeze(1)
-        node_attr = torch.cat([node_attr, degree_tensor], dim=1)
-        # ----- [연결 중심성 (Degree Centrality) 추가 끝] -----
 
-        # ----- [근접 중심성 (Closeness Centrality) 추가 시작] -----
+        return degree_tensor
+    # end of def get_degree_tensor
+
+    def get_closeness_tensor(nx_graph, accounts) :
         closeness_centrality = {} # disconnected graph 에러 방지 위해 초기화
         try:
             closeness_centrality = nx.closeness_centrality(nx_graph)
@@ -191,10 +186,126 @@ class AMLtoGraph(InMemoryDataset):
 
         closeness_values = [closeness_centrality.get(i, 0) for i in range(accounts.shape[0])] # get(i, 0) : key i가 없으면 0 반환
         closeness_tensor = torch.tensor(closeness_values, dtype=torch.float).unsqueeze(1)
-        node_attr = torch.cat([node_attr, closeness_tensor], dim=1)
-        # ----- [근접 중심성 (Closeness Centrality) 추가 끝] -----
+        
+        return closeness_tensor
+    # end of def get_closeness_tensor
+## networkX 의 계좌중심성 지표(3) 끝 ###############################################
+## networkX 의 자금세탁 패턴 지표(6) 함수 시작 #####################################
+    def get_transaction_frequency_tensor(nx_graph, accounts) :
+        # 1. 거래 빈도 (Transaction Frequency) / 거래량 (Transaction Volume) (Node Degree 활용)
+        # - Degree Centrality 값 (이미 계산됨) 을 거래 빈도/량 지표로 재활용
+        degree_centrality = nx.degree_centrality(nx_graph) # or use nx.degree(nx_graph) which returns degree directly
+        degree_values = [degree_centrality.get(i, 0) for i in range(accounts.shape[0])]
+        transaction_frequency_tensor = torch.tensor(degree_values, dtype=torch.float).unsqueeze(1) # tensor로 변환 및 차원 조정
+        return transaction_frequency_tensor
+    # end of def get_transaction_frequency_tensor
 
+
+    def get_in_out_degree_ratio_tensor(nx_digraph, accounts) :
+        # 2. In-Degree / Out-Degree 비율 (방향 그래프 고려)
+        in_degree_centrality = nx.in_degree_centrality(nx_digraph)
+        out_degree_centrality = nx.out_degree_centrality(nx_digraph)
+
+        in_degree_values = [in_degree_centrality.get(i, 0) for i in range(accounts.shape[0])]
+        out_degree_values = [out_degree_centrality.get(i, 0) for i in range(accounts.shape[0])]
+
+        in_degree_tensor = torch.tensor(in_degree_values, dtype=torch.float).unsqueeze(1)
+        out_degree_tensor = torch.tensor(out_degree_values, dtype=torch.float).unsqueeze(1)
+
+        in_out_degree_ratio_tensor = (out_degree_tensor + 1e-6) / (in_degree_tensor + 1e-6) # 분모가 0이 되는 것 방지 위해 작은 값 더함
+        return in_out_degree_ratio_tensor
+    # end of def get_in_out_degree_ratio_tensor
+
+
+    def get_pagerank_tensor(nx_digraph, accounts) :
+        # 3. PageRank Centrality
+        pagerank_centrality = nx.pagerank(nx_digraph) # 방향 그래프 사용
+        pagerank_values = [pagerank_centrality.get(i, 0) for i in range(accounts.shape[0])]
+        pagerank_tensor = torch.tensor(pagerank_values, dtype=torch.float).unsqueeze(1)
+        return pagerank_tensor
+    # end of def get_pagerank_tensor
+
+
+    def get_clustering_coefficient_tensor(nx_graph, accounts) :
+        # 4. Local Clustering Coefficient (클러스터링 계수)
+        clustering_coefficient = nx.clustering(nx_graph)
+        clustering_values = [clustering_coefficient.get(i, 0) for i in range(accounts.shape[0])]
+        clustering_tensor = torch.tensor(clustering_values, dtype=torch.float).unsqueeze(1)
+        return clustering_tensor
+    # end of def get_clustering_coefficient_tensor
+
+
+    def get_avg_neighbor_degree_tensor(nx_graph, accounts) :
+        # 5. Average Neighbor Degree (평균 이웃 Degree)
+        avg_neighbor_degree = nx.average_neighbor_degree(nx_graph)
+        avg_neighbor_degree_values = [avg_neighbor_degree.get(i, 0) for i in range(accounts.shape[0])]
+        avg_neighbor_degree_tensor = torch.tensor(avg_neighbor_degree_values, dtype=torch.float).unsqueeze(1)
+        return avg_neighbor_degree_tensor
+    # end of def get_avg_neighbor_degree_tensor
+
+
+    def get_shortest_path_related_tensor(nx_graph, accounts) :
+        # 6. Shortest Path Length 관련 지표 (평균 최단 경로 길이, Diameter 등)
+        # 평균 최단 경로 길이 (disconnected graph일 경우 에러 발생 가능성 있음)
+        try:
+            avg_shortest_path = nx.average_shortest_path_length(nx_graph)
+        except nx.NetworkXError: # disconnected graph인 경우 예외 처리 (0 또는 -1 등의 값으로 대체하거나, component별로 계산)
+            avg_shortest_path = 0  # 또는 avg_shortest_path = -1
+
+        # 네트워크 지름 (disconnected graph일 경우 에러 발생 가능성 있음)
+        try:
+            diameter = nx.diameter(nx_graph)
+        except nx.NetworkXError: # disconnected graph인 경우 예외 처리
+            diameter = 0 # 또는 diameter = -1
+
+        avg_shortest_path_values = [avg_shortest_path] * accounts.shape[0] # 모든 노드에 동일 값 적용
+        diameter_values = [diameter] * accounts.shape[0] # 모든 노드에 동일 값 적용
+
+        avg_shortest_path_tensor = torch.tensor(avg_shortest_path_values, dtype=torch.float).unsqueeze(1)
+        diameter_tensor = torch.tensor(diameter_values, dtype=torch.float).unsqueeze(1)
+
+        shortest_path_related_tensor = torch.cat([avg_shortest_path_tensor, diameter_tensor], dim=1) # 평균 최단경로길이, 지름 함께 return
+        return shortest_path_related_tensor
+    # end of def get_shortest_path_related_tensor
+
+## networkX 의 자금세탁 패턴 지표(6) 함수 끝 #######################################
+####### networkX 의 계좌중심성 지표(3) / 자금세탁 패턴 지표(6) 함수 끝 ################
+
+
+    def process(self):
+        df = pd.read_csv(self.raw_paths[0])
+        df, receiving_df, paying_df, currency_ls = self.preprocess(df)
+        accounts = self.get_all_account(df)
+        node_attr, node_label = self.get_node_attr(currency_ls, paying_df,receiving_df, accounts)
+        edge_attr, edge_index = self.get_edge_df(accounts, df)
+
+# ############################################################## 2025.02.19 ################################################################
+        # NetworkX 그래프 생성
+        # nx_graph = nx.Graph() # or nx.DiGraph() depending on your graph directionality
+        # edge_list = edge_index.t().tolist() # edge_index를 NetworkX edge 형식으로 변환
+        # nx_graph.add_edges_from(edge_list)
+
+        ### ----- [중심성(Centrality) 계산 (Betweenness Centrality ) 추가 ] -----
+        #  node_attr = torch.cat([node_attr, get_betweenness_tensor(nx_graph, accounts)], dim=1) # 기존 node_attr에 중심성 feature 연결
+
+        ### ----- [연결 중심성 (Degree Centrality) 추가 ] -----
+        # node_attr = torch.cat([node_attr, get_degree_tensor(nx_graph, accounts)], dim=1)
+
+        ### ----- [근접 중심성 (Closeness Centrality) 추가 ] -----
+        # node_attr = torch.cat([node_attr, get_closeness_tensor(nx_graph, accounts)], dim=1)
+        #### 자금세탁 패텬 지표 6가지 함수 효출 추가 ###
+
+        #### 자금세탁 패텬 지표 6가지 함수 효출 끝 ###
 ############################################################################################################################################
+
+
+        data = Data(x=node_attr,
+                    edge_index=edge_index,
+                    y=node_label,
+                    edge_attr=edge_attr
+                    )
+
+                    
 #############################################################[다운샘플링 코드 시작]###########################################################
         downsample_ratio = 0.2  # 다운샘플링 비율 (label 0 데이터 중 몇 %를 사용할지, 0.0 ~ 1.0)
         num_label_0 = (node_label == 0).sum().item() # label 0 개수
@@ -213,17 +324,10 @@ class AMLtoGraph(InMemoryDataset):
         train_mask = torch.zeros(node_label.size(0), dtype=torch.bool) # 전체 node mask 생성 (False로 초기화)
         train_mask[train_indices] = True # 다운샘플링된 index에 해당하는 mask만 True로 설정
         data.train_mask = train_mask # train_mask를 Data 객체에 할당
-############################################################################################################################################
+        data.val_mask = None # 다운샘플링 적용 : validation/test mask는 train.py에서 RandomNodeSplit으로 생성하므로 None으로 설정
+        data.test_mask = None
+##############################################################[다운샘플링 코드  끝]############################################################
 
-        data = Data(x=node_attr,
-                    edge_index=edge_index,
-                    y=node_label,
-                    edge_attr=edge_attr,
-                    train_mask=train_mask, # 다운샘플링 적용 : train_mask 포함하여 Data 객체 생성
-                    val_mask=None, # 다운샘플링 적용 : validation/test mask는 train.py에서 RandomNodeSplit으로 생성하므로 None으로 설정
-                    test_mask=None
-                    )
-        
         data_list = [data] 
         if self.pre_filter is not None:
             data_list = [d for d in data_list if self.pre_filter(d)]
