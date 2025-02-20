@@ -285,16 +285,19 @@ class AMLtoGraph(InMemoryDataset):
         # edge_list = edge_index.t().tolist() # edge_index를 NetworkX edge 형식으로 변환
         # nx_graph.add_edges_from(edge_list)
 
-        ### ----- [중심성(Centrality) 계산 (Betweenness Centrality ) 추가 ] -----
-        #  node_attr = torch.cat([node_attr, get_betweenness_tensor(nx_graph, accounts)], dim=1) # 기존 node_attr에 중심성 feature 연결
+        #### 계좌 중심성 지표 3가지 함수 효출 추가  - 기존 node_attr에 중심성 feature 연결 ###
+        # node_attr = torch.cat([node_attr, get_betweenness_tensor(nx_graph, accounts)], dim=1) # 1. 중심성(Centrality) 계산 (Betweenness Centrality )
+        # node_attr = torch.cat([node_attr, get_degree_tensor(nx_graph, accounts)], dim=1) # 2. 연결 중심성 (Degree Centrality)
+        # node_attr = torch.cat([node_attr, get_closeness_tensor(nx_graph, accounts)], dim=1) #3. 근접 중심성 (Closeness Centrality)
+        #### 계좌 중심성 지표 3가지 함수 효출 끝 ###
 
-        ### ----- [연결 중심성 (Degree Centrality) 추가 ] -----
-        # node_attr = torch.cat([node_attr, get_degree_tensor(nx_graph, accounts)], dim=1)
-
-        ### ----- [근접 중심성 (Closeness Centrality) 추가 ] -----
-        # node_attr = torch.cat([node_attr, get_closeness_tensor(nx_graph, accounts)], dim=1)
         #### 자금세탁 패텬 지표 6가지 함수 효출 추가 ###
-
+        # node_attr = torch.cat([node_attr, get_transaction_frequency_tensor(nx_graph, accounts)], dim=1) # 1. 거래빈도
+        # node_attr = torch.cat([node_attr, get_in_out_degree_ratio_tensor(nx_graph, accounts)], dim=1) # In-Degree / Out-Degree 비율 (방향 그래프 고려)
+        # node_attr = torch.cat([node_attr, get_pagerank_tensor(nx_graph, accounts)], dim=1) # 3. Page Rank Centrality~
+        # node_attr = torch.cat([node_attr, get_clustering_coefficient_tensor(nx_graph, accounts)], dim=1) # 4. 클러스터링 계수
+        # node_attr = torch.cat([node_attr, get_avg_neighbor_degree_tensor(nx_graph, accounts)], dim=1) # 5. 평균 이웃 Degree
+        # node_attr = torch.cat([node_attr, get_shortest_path_related_tensor(nx_graph, accounts)], dim=1) # 6. 평균 최단 경로 길이
         #### 자금세탁 패텬 지표 6가지 함수 효출 끝 ###
 ############################################################################################################################################
 
@@ -305,7 +308,7 @@ class AMLtoGraph(InMemoryDataset):
                     edge_attr=edge_attr
                     )
 
-                    
+
 #############################################################[다운샘플링 코드 시작]###########################################################
         downsample_ratio = 0.2  # 다운샘플링 비율 (label 0 데이터 중 몇 %를 사용할지, 0.0 ~ 1.0)
         num_label_0 = (node_label == 0).sum().item() # label 0 개수
