@@ -18,7 +18,7 @@ from torch_geometric.loader import NeighborLoader #그래프 데이터를 미니
 ############################################################################################################################################
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # GPU or CPU 선택
-dataset = AMLtoGraph('../../../archive') # AMLtoGraph 클래스를 사용하여 데이터셋을 로드.
+dataset = AMLtoGraph('../../../../archive') # AMLtoGraph 클래스를 사용하여 데이터셋을 로드.
 data = dataset[0] # 데이터셋의 첫 번째 그래프 데이터를 로드.
 epoch = 10
 
