@@ -8,6 +8,12 @@ from sklearn import preprocessing # 레이블 인코딩과 같은 전처리 작�
 import numpy as np
 import torch
 import networkx as nx  # NetworkX 라이브러리 import
+from torch_geometric.data import (
+    Data,
+    InMemoryDataset
+) # PyTorch Geometric의 데이터 구조를 정의
+
+pd.set_option('display.max_columns', None)
 
 ################################################################ 2025.02.19 ################################################################
 # networkX 중심성계좌 함수 추가 1개
@@ -22,15 +28,6 @@ import networkx as nx  # NetworkX 라이브러리 import
 ############################################################################################################################################
 # 새로 실행 할때, data.pt 삭제 하고 실행 할 것 : 수정된 dataset.py 의 process() 함수가 다시 실행되어 새로운 중심성 Feature가 포함된 data.pt 파일이 생성 됨.
 ############################################################################################################################################
-
-
-from torch_geometric.data import (
-    Data,
-    InMemoryDataset
-) # PyTorch Geometric의 데이터 구조를 정의
-
-pd.set_option('display.max_columns', None)
-
 
 class AMLtoGraph(InMemoryDataset):
 # PyTorch Geometric의 InMemoryDataset을 상속받아 메모리 내에서 데이터셋을 처리
