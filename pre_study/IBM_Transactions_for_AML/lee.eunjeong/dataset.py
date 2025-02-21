@@ -175,6 +175,7 @@ class AMLtoGraph(InMemoryDataset):
 
     def get_closeness_tensor(nx_graph, accounts) :
         closeness_centrality = {} # disconnected graph 에러 방지 위해 초기화
+        # 근접 중심성 ( Closeness Centrality )
         try:
             closeness_centrality = nx.closeness_centrality(nx_graph)
         except nx.NetworkXError:
