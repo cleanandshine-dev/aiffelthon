@@ -20,7 +20,7 @@ from torch_geometric.loader import NeighborLoader #그래프 데이터를 미니
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # GPU or CPU 선택
 dataset = AMLtoGraph('../../../../archive') # AMLtoGraph 클래스를 사용하여 데이터셋을 로드.
 data = dataset[0] # 데이터셋의 첫 번째 그래프 데이터를 로드.
-epoch = 10
+epoch = 100
 
 # 2025.02.19 networkX 여기 수정 하라는데, 똑같다 ? 
 model = GAT(in_channels=data.num_features, hidden_channels=16, out_channels=1, heads=8) 

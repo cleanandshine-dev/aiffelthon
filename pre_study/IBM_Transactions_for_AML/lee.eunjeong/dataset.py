@@ -46,7 +46,9 @@ class AMLtoGraph(InMemoryDataset):
 
     @property
     def raw_file_names(self) -> str:
-        return 'HI-Small_Trans.csv'
+        # return 'HI-Small_Trans.csv' ## 원본 데이터
+        return 'fake_transaction_data.csv' ## faker 합성 데이터
+
 
     @property
     def processed_file_names(self) -> str:
@@ -308,25 +310,25 @@ class AMLtoGraph(InMemoryDataset):
 
 
 #############################################################[다운샘플링 코드 시작]###########################################################
-        downsample_ratio = 0.2  # 다운샘플링 비율 (label 0 데이터 중 몇 %를 사용할지, 0.0 ~ 1.0)
-        num_label_0 = (node_label == 0).sum().item() # label 0 개수
-        num_label_1 = (node_label == 1).sum().item() # label 1 개수
+        # downsample_ratio = 0.2  # 다운샘플링 비율 (label 0 데이터 중 몇 %를 사용할지, 0.0 ~ 1.0)
+        # num_label_0 = (node_label == 0).sum().item() # label 0 개수
+        # num_label_1 = (node_label == 1).sum().item() # label 1 개수
 
-        if num_label_0 > 0: # label 0 데이터가 있는 경우에만 다운샘플링 적용
-            downsampled_label_0_count = int(num_label_0 * downsample_ratio) # 다운샘플링할 label 0 데이터 개수
-            label_0_indices = (node_label == 0).nonzero(as_tuple=True)[0] # label 0 node index
-            rand_perm = torch.randperm(num_label_0) # label 0 index 랜덤 섞기
-            downsampled_indices_label_0 = label_0_indices[rand_perm[:downsampled_label_0_count]] # 다운샘플링된 label 0 index 선택
-            label_1_indices = (node_label == 1).nonzero(as_tuple=True)[0] # label 1 node index
-            train_indices = torch.cat([downsampled_indices_label_0, label_1_indices]) # 다운샘플링된 label 0 index + 전체 label 1 index
-        else:
-            train_indices = (node_label == 1).nonzero(as_tuple=True)[0] # label 0 데이터가 없으면 label 1 데이터만 사용 (혹은 에러 처리)
+        # if num_label_0 > 0: # label 0 데이터가 있는 경우에만 다운샘플링 적용
+        #     downsampled_label_0_count = int(num_label_0 * downsample_ratio) # 다운샘플링할 label 0 데이터 개수
+        #     label_0_indices = (node_label == 0).nonzero(as_tuple=True)[0] # label 0 node index
+        #     rand_perm = torch.randperm(num_label_0) # label 0 index 랜덤 섞기
+        #     downsampled_indices_label_0 = label_0_indices[rand_perm[:downsampled_label_0_count]] # 다운샘플링된 label 0 index 선택
+        #     label_1_indices = (node_label == 1).nonzero(as_tuple=True)[0] # label 1 node index
+        #     train_indices = torch.cat([downsampled_indices_label_0, label_1_indices]) # 다운샘플링된 label 0 index + 전체 label 1 index
+        # else:
+        #     train_indices = (node_label == 1).nonzero(as_tuple=True)[0] # label 0 데이터가 없으면 label 1 데이터만 사용 (혹은 에러 처리)
 
-        train_mask = torch.zeros(node_label.size(0), dtype=torch.bool) # 전체 node mask 생성 (False로 초기화)
-        train_mask[train_indices] = True # 다운샘플링된 index에 해당하는 mask만 True로 설정
-        data.train_mask = train_mask # train_mask를 Data 객체에 할당
-        data.val_mask = None # 다운샘플링 적용 : validation/test mask는 train.py에서 RandomNodeSplit으로 생성하므로 None으로 설정
-        data.test_mask = None
+        # train_mask = torch.zeros(node_label.size(0), dtype=torch.bool) # 전체 node mask 생성 (False로 초기화)
+        # train_mask[train_indices] = True # 다운샘플링된 index에 해당하는 mask만 True로 설정
+        # data.train_mask = train_mask # train_mask를 Data 객체에 할당
+        # data.val_mask = None # 다운샘플링 적용 : validation/test mask는 train.py에서 RandomNodeSplit으로 생성하므로 None으로 설정
+        # data.test_mask = None
 ##############################################################[다운샘플링 코드  끝]############################################################
 
         data_list = [data] 
