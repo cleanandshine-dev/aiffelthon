@@ -46,8 +46,7 @@ class AMLtoGraph(InMemoryDataset):
 
     @property
     def raw_file_names(self) -> str:
-        # return 'HI-Small_Trans.csv' ## 원본 데이터
-        return 'fake_transaction_data.csv' ## faker 합성 데이터
+        return 'HI-Small_Trans.csv' ## 원본 데이터
 
 
     @property
@@ -76,6 +75,7 @@ class AMLtoGraph(InMemoryDataset):
         df['Account'] = df['From Bank'].astype(str) + '_' + df['Account']
         df['Account.1'] = df['To Bank'].astype(str) + '_' + df['Account.1'] # 은행 정보와 결합하여 고유한 계정 식별자 생성
         df = df.sort_values(by=['Account'])
+
         receiving_df = df[['Account.1', 'Amount Received', 'Receiving Currency']] # 송금 및 수금 데이터를 분리.
         paying_df = df[['Account', 'Amount Paid', 'Payment Currency']]
         receiving_df = receiving_df.rename({'Account.1': 'Account'}, axis=1)
@@ -87,10 +87,12 @@ class AMLtoGraph(InMemoryDataset):
         ldf = df[['Account', 'From Bank']]
         rdf = df[['Account.1', 'To Bank']]
         suspicious = df[df['Is Laundering']==1]
+
         s1 = suspicious[['Account', 'Is Laundering']]
         s2 = suspicious[['Account.1', 'Is Laundering']]
         s2 = s2.rename({'Account.1': 'Account'}, axis=1)
         suspicious = pd.concat([s1, s2], join='outer')
+        
         suspicious = suspicious.drop_duplicates()
 
         ldf = ldf.rename({'From Bank': 'Bank'}, axis=1)
@@ -124,15 +126,27 @@ class AMLtoGraph(InMemoryDataset):
     def get_edge_df(self, accounts, df):
         accounts = accounts.reset_index(drop=True)
         accounts['ID'] = accounts.index
+
+        print('################# accounts ############')
+        print(accounts.dtypes)
+        print(accounts.columns)
+        print('######################################')
+
         mapping_dict = dict(zip(accounts['Account'], accounts['ID']))
+
         df['From'] = df['Account'].map(mapping_dict)
         df['To'] = df['Account.1'].map(mapping_dict)
+
         df = df.drop(['Account', 'Account.1', 'From Bank', 'To Bank'], axis=1)
 
         edge_index = torch.stack([torch.from_numpy(df['From'].values), torch.from_numpy(df['To'].values)], dim=0)
 
         df = df.drop(['Is Laundering', 'From', 'To'], axis=1)
 
+        print('############### df #######################')
+        print(df.dtypes)
+        print(df.columns)
+        print('######################################')
         edge_attr = torch.from_numpy(df.values).to(torch.float)
         return edge_attr, edge_index
         # 간선 데이터를 생성.
@@ -147,6 +161,7 @@ class AMLtoGraph(InMemoryDataset):
         node_df = node_df.drop(['Account', 'Is Laundering'], axis=1)
         node_df = self.df_label_encoder(node_df,['Bank'])
         node_df = torch.from_numpy(node_df.values).to(torch.float)
+        
         return node_df, node_label
         # 노드 특성과 레이블을 생성.
         ## node_df: 노드 특성 (예: 평균 송금/수금 금액).
