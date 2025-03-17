@@ -125,8 +125,8 @@ y_train.value_counts(normalize=True)
 
 
 ### 언더샘플링 - RandomUnderSampling ###
-# 비율 설정 (0.9, 0.8, 0.7, ... 0.1)
-ratios = np.arange(0.9, 0.0, -0.1)
+# 비율 설정 (0.99,...,0.90)
+ratios = np.arange(0.99, 0.89, -0.01)
 
 # 샘플링 결과를 저장할 딕셔너리
 sampled_datasets = {}
@@ -171,7 +171,7 @@ lgb_params = {
 
 # 각 비율별로 LightGBM 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 정상거래비율 {ratio:.1f}로 LightGBM 학습 중...")
+    print(f"\n🔹 정상거래비율 {ratio:.2f}로 LightGBM 학습 중...")
 
     # LightGBM 모델 생성 및 학습
     model = lgb.LGBMClassifier(**lgb_params)
@@ -224,7 +224,7 @@ cat_params = {
 
 # 각 비율별로 CatBoost 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 정상거래비율 {ratio:.1f}로 CatBoostClassifier 학습 중...")
+    print(f"\n🔹 정상거래비율 {ratio:.2f}로 CatBoostClassifier 학습 중...")
 
     # CatBoost 모델 생성 및 학습
     model = cb.CatBoostClassifier(**cat_params)
@@ -281,7 +281,7 @@ xgb_params = {
 
 # 각 비율별로 XGBoost 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 비율 {ratio:.1f}로 XGBoostClassifier 학습 중...")
+    print(f"\n🔹 정상거래비율 {ratio:.2f}로 XGBoostClassifier 학습 중...")
 
     # XGBoost 모델 생성
     model = xgb.XGBClassifier(**xgb_params)
