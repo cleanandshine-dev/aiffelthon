@@ -146,7 +146,7 @@ for ratio in ratios:
     sampled_datasets[ratio] = (X_resampled, y_resampled)
 
     # 데이터 개수 확인
-    print(f"비율 {ratio:.1f}: 0 클래스 {num_majority}, 1 클래스 {num_minority}")
+    print(f"정상거래비율 {ratio:.2f}, 정상거래건수: {num_majority}, 사기거래건수: {num_minority}")
 
 # 샘플링된 데이터셋을 사용해 모델을 학습할 수 있음
 
@@ -174,7 +174,7 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     print(f"\n🔹 정상거래비율 {ratio:.2f}로 LightGBM 학습 중...")
 
     # LightGBM 모델 생성 및 학습
-    model = lgb.LGBMClassifier(**lgb_params)
+    model = LGBMClassifier(**lgb_params)
     model.fit(X_train_resampled, y_train_resampled, eval_set=[(X_val, y_val)])
 
     # 예측 수행
