@@ -178,15 +178,15 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     model.fit(X_train_resampled, y_train_resampled, eval_set=[(X_val, y_val)])
 
     # 예측 수행
-    y_pred = model.predict(X_val)
-    y_pred_proba = model.predict_proba(X_val)[:, 1]  # Positive class 확률
+    y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
 
     # 평가 지표 계산
-    acc = accuracy_score(y_val, y_pred)
-    prec = precision_score(y_val, y_pred, zero_division=0)
-    rec = recall_score(y_val, y_pred)
-    f1 = f1_score(y_val, y_pred)
-    roc_auc = roc_auc_score(y_val, y_pred_proba)
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba)
 
     # 결과 저장
     results.append({
@@ -235,15 +235,15 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     )
 
     # 예측 수행
-    y_pred = model.predict(X_val)
-    y_pred_proba = model.predict_proba(X_val)[:, 1]  # Positive class 확률
+    y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
 
     # 평가 지표 계산
-    acc = accuracy_score(y_val, y_pred)
-    prec = precision_score(y_val, y_pred, zero_division=0)
-    rec = recall_score(y_val, y_pred)
-    f1 = f1_score(y_val, y_pred)
-    roc_auc = roc_auc_score(y_val, y_pred_proba)
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba)
 
     # 결과 저장
     results.append({
@@ -293,15 +293,15 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     )
 
     # 예측 수행
-    y_pred = model.predict(X_val)
-    y_pred_proba = model.predict_proba(X_val)[:, 1]  # Positive class 확률
+    y_pred = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
 
     # 평가 지표 계산
-    acc = accuracy_score(y_val, y_pred)
-    prec = precision_score(y_val, y_pred, zero_division=0)
-    rec = recall_score(y_val, y_pred)
-    f1 = f1_score(y_val, y_pred)
-    roc_auc = roc_auc_score(y_val, y_pred_proba)
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred_proba)
     
 
     # 결과 저장
