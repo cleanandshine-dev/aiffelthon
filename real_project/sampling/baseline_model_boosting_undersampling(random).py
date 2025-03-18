@@ -143,35 +143,34 @@ for ratio in ratios:
     X_resampled, y_resampled = rus.fit_resample(X_train, y_train)
 
     # 저장
-    sampled_datasets[ratio] = (X_resampled, y_resampled)
+    sampled_datasets[1-ratio] = (X_resampled, y_resampled)
 
     # 데이터 개수 확인
-    print(f"정상거래비율 {ratio:.2f}, 정상거래건수: {num_majority}, 사기거래건수: {num_minority}")
+    print(f"의심거래비율 {ratio:.2f}, 정상거래건수: {num_majority}, 사기거래건수: {num_minority}")
 
-# 샘플링된 데이터셋을 사용해 모델을 학습할 수 있음
 
 
 ### 머신러닝 모델링 ###
 ## LightGBM
 # 평가 지표를 저장할 리스트
 results = []
+confusion_matrices=[]
 
 # 하이퍼파라미터 설정 (기본값, 필요시 변경 가능)
 lgb_params = {
     'objective': 'binary',
-    'metric': 'auc',
     'boosting_type': 'gbdt',
     'num_leaves': 5,
     'learning_rate': 0.05,
     'n_estimators': 500,
     'verbose': -1,
-    'max_depth':5,
+    'max_depth':7,
     'random_state':42
 }
 
 # 각 비율별로 LightGBM 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 정상거래비율 {ratio:.2f}로 LightGBM 학습 중...")
+    print(f"\n🔹 의심거래비율 {ratio:.2f}로 LightGBM 학습 중...")
 
     # LightGBM 모델 생성 및 학습
     model = LGBMClassifier(**lgb_params)
@@ -179,7 +178,7 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
 
     # 예측 수행
     y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  
 
     # 평가 지표 계산
     acc = accuracy_score(y_test, y_pred)
@@ -188,46 +187,89 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     f1 = f1_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred_proba)
 
+    # 혼동 행렬 계산
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+    # FPR 계산
+    fpr = fp / (fp + tn)
+            
     # 결과 저장
     results.append({
-        "비율": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
-        "F1-score": f1, "ROC-AUC": roc_auc
+        "sp_ratio": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
+        "F1-score": f1, "ROC-AUC": roc_auc, "FPR": fpr
     })
 
+    confusion_matrices.append(confusion_matrix(y_test, y_pred))
 
 # 결과 정리
 df_results = pd.DataFrame(results)
 
 # 성능 비교 출력
-print("\n📊 LightGBM성능 비교 결과")
+print("\n📊 LightGBM 성능 비교 결과")
 print(df_results)
 
-# 성능 결과를 CSV 파일로 저장 (옵션)
-df_results.to_csv("random_lightgbm_results.csv", index=False)
+## 성능 지표 시각화 ##
+
+# 그래프 크기 설정
+plt.figure(figsize=(10, 6))
+
+# 성능 지표 그래프
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-score', 'ROC-AUC', 'FPR']
+
+# 각 성능 지표를 그래프로 표시
+for metric in metrics:
+   plt.plot(df_results['sp_ratio'],
+            df_results[metric],
+            marker='o',
+            label=metric)
+
+# 그래프 제목 및 라벨 설정
+plt.title("Performance Metrics by Random UnderSampling Ratio(LGBM)", fontsize=14)
+plt.xlabel("Sampling Ratio (Proportion of Minority Class)", fontsize=12)
+plt.ylabel("Metric Score", fontsize=12)
+plt.xticks(df_results['sp_ratio'])
+plt.legend(title="Metrics")
+plt.grid(True)
+
+# 그래프 출력
+plt.show()
+
+# confusion_matrix 시각화(가장 나은 성능으로)
+best_lgbm_cm = confusion_matrices[0]
+group_names = ["TN", "FP", "FN", "TP"]
+group_counts = [value for value in best_lgbm_cm.flatten()]
+group_percentages = [f"{value:.4%}" for value in best_lgbm_cm.flatten()/np.sum(best_lgbm_cm)]
+labels = [f"{name}\n{count}\n({percent})" for name, count, percent in zip(group_names, group_counts, group_percentages)]
+labels = np.asarray(labels).reshape(2, 2)
+
+sns.heatmap(best_lgbm_cm, annot=labels, fmt='', cmap='Blues')
+plt.title('Confusion Matrix(LightGBM, sp_ratio 0.01)')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.show()
 
 
 ## Catboost
 # 평가 지표를 저장할 리스트
 results = []
+confusion_matrices=[]
 
 # CatBoostClassifier 하이퍼파라미터 설정
 cat_params = {
-    'loss_function': 'Logloss',
-    'eval_metric': 'AUC',
     'iterations': 500,
     'learning_rate': 0.05,
     'depth': 6,
-    'verbose': 0,
+    'verbose': 100,
     'early_stopping_rounds': 50,
     'cat_features':['wd_fc_ac', 'dps_fc_ac','md_type', 'fnd_type']
 }
 
 # 각 비율별로 CatBoost 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 정상거래비율 {ratio:.2f}로 CatBoostClassifier 학습 중...")
+    print(f"\n🔹 의심거래비율 {ratio:.2f}로 CatBoostClassifier 학습 중...")
 
     # CatBoost 모델 생성 및 학습
-    model = cb.CatBoostClassifier(**cat_params)
+    model = CatBoostClassifier(**cat_params)
     model.fit(
         X_train_resampled, y_train_resampled,
         eval_set=(X_val, y_val),
@@ -236,7 +278,7 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
 
     # 예측 수행
     y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  
 
     # 평가 지표 계산
     acc = accuracy_score(y_test, y_pred)
@@ -245,11 +287,19 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     f1 = f1_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred_proba)
 
+    # 혼동 행렬 계산
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+    # FPR 계산
+    fpr = fp / (fp + tn)
+
     # 결과 저장
     results.append({
-        "비율": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
-        "F1-score": f1, "ROC-AUC": roc_auc
+        "sp_ratio": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
+        "F1-score": f1, "ROC-AUC": roc_auc, "FPR": fpr
     })
+
+    confusion_matrices.append(confusion_matrix(y_test, y_pred))
 
 # 결과 정리
 df_results = pd.DataFrame(results)
@@ -258,30 +308,67 @@ df_results = pd.DataFrame(results)
 print("\n📊 CatBoost 성능 비교 결과")
 print(df_results)
 
-# 성능 결과를 CSV 파일로 저장 (옵션)
-df_results.to_csv("random_catboost_results.csv", index=False)
+## 성능 지표 시각화 ##
+
+# 그래프 크기 설정
+plt.figure(figsize=(10, 6))
+
+# 성능 지표 그래프
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-score', 'ROC-AUC', 'FPR']
+
+# 각 성능 지표를 그래프로 표시
+for metric in metrics:
+   plt.plot(df_results['sp_ratio'],
+            df_results[metric],
+            marker='o',
+            label=metric)
+
+# 그래프 제목 및 라벨 설정
+plt.title("Performance Metrics by Random UnderSampling Ratio(CatBoost)", fontsize=14)
+plt.xlabel("Sampling Ratio (Proportion of Minority Class)", fontsize=12)
+plt.ylabel("Metric Score", fontsize=12)
+plt.xticks(df_results['sp_ratio'])
+plt.legend(title="Metrics")
+plt.grid(True)
+
+# 그래프 출력
+plt.show()
+
+# confusion_matrix 시각화(가장 나은 성능으로)
+best_cbt_cm = confusion_matrices[0]
+group_names = ["TN", "FP", "FN", "TP"]
+group_counts = [value for value in best_cbt_cm.flatten()]
+group_percentages = [f"{value:.4%}" for value in best_cbt_cm.flatten()/np.sum(best_cbt_cm)]
+labels = [f"{name}\n{count}\n({percent})" for name, count, percent in zip(group_names, group_counts, group_percentages)]
+labels = np.asarray(labels).reshape(2, 2)
+
+sns.heatmap(best_cbt_cm, annot=labels, fmt='', cmap='Blues')
+plt.title('Confusion Matrix(CatBoost, sp_ratio 0.01)')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.show()
 
 
 ## XGBoost
 # 평가 지표를 저장할 리스트
 results = []
+confusion_matrices=[]
 
 # XGBoost 하이퍼파라미터 설정 (기본값, 필요시 변경 가능)
 xgb_params = {
     'objective': 'binary:logistic',
     'eval_metric': 'logloss',
     'learning_rate': 0.05,
-    'max_depth': 6,
+    'max_depth': 7,
     'n_estimators': 500,
     'early_stopping_rounds': 50,
-    'scale_pos_weight': sum(y_train==0) / sum(y_train==1),
     'enable_categorical':True,
     'seed':42
 }
 
 # 각 비율별로 XGBoost 모델 학습 및 평가
 for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
-    print(f"\n🔹 정상거래비율 {ratio:.2f}로 XGBoostClassifier 학습 중...")
+    print(f"\n🔹 의심거래비율 {ratio:.2f}로 XGBoostClassifier 학습 중...")
 
     # XGBoost 모델 생성
     model = xgb.XGBClassifier(**xgb_params)
@@ -289,12 +376,13 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     # 학습 진행 (검증 데이터 포함)
     model.fit(
         X_train_resampled, y_train_resampled,
-        eval_set=[(X_val, y_val)]
+        eval_set=[(X_val, y_val)],
+        verbose = 100
     )
 
     # 예측 수행
     y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]  # Positive class 확률
+    y_pred_proba = model.predict_proba(X_test)[:, 1]  
 
     # 평가 지표 계산
     acc = accuracy_score(y_test, y_pred)
@@ -302,13 +390,20 @@ for ratio, (X_train_resampled, y_train_resampled) in sampled_datasets.items():
     rec = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_pred_proba)
-    
+
+    # 혼동 행렬 계산
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+    # FPR 계산
+    fpr = fp / (fp + tn)
 
     # 결과 저장
     results.append({
-        "비율": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
-        "F1-score": f1, "ROC-AUC": roc_auc
+        "sp_ratio": ratio, "Accuracy": acc, "Precision": prec, "Recall": rec, 
+        "F1-score": f1, "ROC-AUC": roc_auc, "FPR": fpr
     })
+
+   confusion_matrices.append(confusion_matrix(y_test, y_pred))
 
 # 결과 정리
 df_results = pd.DataFrame(results)
@@ -317,5 +412,42 @@ df_results = pd.DataFrame(results)
 print("\n📊 XGBoost 성능 비교 결과")
 print(df_results)
 
-# 성능 결과를 CSV 파일로 저장 (옵션)
-df_results.to_csv("random_xgboost_results.csv", index=False)
+## 성능 지표 시각화 ##
+
+# 그래프 크기 설정
+plt.figure(figsize=(10, 6))
+
+# 성능 지표 그래프
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-score', 'ROC-AUC', 'FPR']
+
+# 각 성능 지표를 그래프로 표시
+for metric in metrics:
+   plt.plot(df_results['sp_ratio'],
+            df_results[metric],
+            marker='o',
+            label=metric)
+
+# 그래프 제목 및 라벨 설정
+plt.title("Performance Metrics by Random UnderSampling Ratio(XGBoost)", fontsize=14)
+plt.xlabel("Sampling Ratio (Proportion of Minority Class)", fontsize=12)
+plt.ylabel("Metric Score", fontsize=12)
+plt.xticks(df_results['sp_ratio'])
+plt.legend(title="Metrics")
+plt.grid(True)
+
+# 그래프 출력
+plt.show()
+
+# confusion_matrix 시각화(가장 나은 성능으로)
+best_xgb_cm = confusion_matrices[0]
+group_names = ["TN", "FP", "FN", "TP"]
+group_counts = [value for value in best_xgb_cm.flatten()]
+group_percentages = [f"{value:.4%}" for value in best_xgb_cm.flatten()/np.sum(best_xgb_cm)]
+labels = [f"{name}\n{count}\n({percent})" for name, count, percent in zip(group_names, group_counts, group_percentages)]
+labels = np.asarray(labels).reshape(2, 2)
+
+sns.heatmap(best_xgb_cm, annot=labels, fmt='', cmap='Blues')
+plt.title('Confusion Matrix(XGBoost, sp_ratio 0.01)')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.show()
