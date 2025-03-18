@@ -200,16 +200,3 @@ xgb.fit(X_train, y_train, eval_set=[(X_val, y_val)])
 xgb_pred = xgb.predict(X_test)
         
 print(classification_report(y_test, xgb_pred))
-
-
-
-
-
-
-
-
-
-
-
-
-
