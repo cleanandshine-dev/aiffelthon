@@ -170,6 +170,22 @@ class AMLtoGraph(InMemoryDataset):
 
         # 노드 속성 추가 (중요!)
         node_attr = torch.tensor(df_sampled[['tran_dt', 'tran_amt']].values, dtype=torch.float)
+        
+        # NetworkX 그래프 생성
+        # nx_graph = nx.Graph()
+        # edges = edge_index.T.tolist()
+        # nx_graph.add_edges_from(edges)
+
+        # 노드 속성 추가
+        # node_attr = torch.cat([self.get_betweenness_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_degree_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_closeness_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_transaction_frequency_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_in_out_degree_ratio_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_pagerank_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_clustering_coefficient_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_avg_neighbor_degree_tensor(nx_graph, df)], dim=1)
+        # node_attr = torch.cat([node_attr, self.get_shortest_path_related_tensor(nx_graph, df)], dim=1)
 
         # PyTorch Geometric 데이터 변환
         data = Data(x=node_attr, edge_index=edge_index, edge_attr=edge_attr, y=node_label)
