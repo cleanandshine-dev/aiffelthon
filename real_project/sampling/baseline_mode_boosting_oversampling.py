@@ -36,6 +36,10 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 
+# networkX - community detection 추가
+import networkx as nx
+from networkx.algorithms import community
+
 
 
 ### 데이터 불러오기 ###
@@ -96,13 +100,51 @@ df['weekday_sin'] = round(np.sin(2 * np.pi * df['weekday'] / 7), 4)
 df['weekday_cos'] = round(np.cos(2 * np.pi * df['weekday'] / 7), 4)
 df.head()
 
+# 전체 데이터에서 100원 미만의 데이터 개수 삭제
+df_new[df_new['tran_amt'] < 1000].shape
+
+df = df[df['tran_amt'] < 1000].copy()
+
+
+# 컬럼간 상관관계 확인
+plt.figure(figsize=(10, 10))
+
+corr_cols = ['dps_fc_ac_fnd_amt', 'dps_fc_ac_fnd_cnt',
+             'dps_fc_ac_md_amt', 'dps_fc_ac_md_cnt', 'wd_fc_ac_fnd_amt',
+             'wd_fc_ac_fnd_cnt', 'wd_fc_ac_md_amt', 'wd_fc_ac_md_cnt']
+
+sns.heatmap(df[corr_cols].corr(numeric_only=True), annot=True)
+plt.show()
+
+
+## community detection 추가
+### 그래프 생성 ###
+# DataFrame에서 그래프 생성
+G = nx.Graph()
+
+# 그래프에 엣지를 추가 (예: 거래 금액이 있는 엣지를 추가)
+for index, row in df.iterrows():
+    G.add_edge(row['wd_fc_ac'], row['dps_fc_ac'], weight=row['tran_amt'])
+
+### 커뮤니티 탐지 ###
+# 루밴 방법을 사용하여 커뮤니티 탐지
+communities = community.louvain_communities(G, weight='weight')
+
+# 각 노드에 커뮤니티 번호 할당
+community_map = {}
+for community_number, community_nodes in enumerate(communities):
+    for node in community_nodes:
+        community_map[node] = community_number
+
+# 새로운 피처로 커뮤니티 추가
+df['community'] = df['wd_fc_ac'].map(community_map)
 
 
 ### 훈련, 검증, 시험 데이터로 나누기 ###
 # 컬럼 분리
 features = ['wd_fc_ac', 'dps_fc_ac', 'md_type', 'fnd_type',
             'tran_amt', 'month', 'day', 'hour_sin', 'hour_cos',
-            'weekday_sin', 'weekday_cos']
+            'weekday_sin', 'weekday_cos', 'community'] # community 피쳐 추가
 target = 'ff_sp_ai'
 
 
@@ -126,42 +168,41 @@ display(X_train.tail(3))
 y_train.value_counts(normalize=True)
 
 
-### Normal 데이터 샘플링 및 오버 샘플링 추가 시작 ###
-normal_data = df[df['ff_sp_ai'] == 0]  # 정상 데이터
-fraud_data = df[df['ff_sp_ai'] == 1]   # 사기 데이터
+#### Normal 데이터 샘플링 및 오버 샘플링 추가 시작 ####
 
 # 정상 데이터의 25% 비율로 샘플링
-normal_data_sampled = normal_data.sample(frac=0.25, random_state=42)
+num_of_sp = (y_train == 1).sum()
+num_of_under_samples = int(((y_train == 0).sum()) * 0.25)
+print(f"훈련데이터에서 정상거래수: {len(y_train)}")
+print(f"언더샘플링으로 줄일 정상거래수: {num_of_under_samples}")
+
+rus = RandomUnderSampler(sampling_strategy={0: num_of_under_samples}, random_state=42)
+X_under_sampled, y_under_sampled = rus.fit_resample(X_train, y_train)
+print(f"언더샘플링으로 줄어든 정상거래수: {(y_under_sampled==0).sum()}")
 
 # 오버샘플링
-ros = RandomOverSampler(random_state=42)
-X = pd.concat([normal_data_sampled[features], fraud_data[features]], axis=0)
-y = pd.concat([normal_data_sampled[target], fraud_data[target]], axis=0)
+ros = RandomOverSampler(sampling_strategy='auto', random_state=42)
+X_over_resampled, y_over_resampled = ros.fit_resample(X_under_sampled, y_under_sampled)
+print(f"오버샘플링으로 이후 정상거래수 : {(y_over_resampled==1).sum()}")
+print(f"사기거래수 : {(y_over_resampled==1).sum()}")
 
-X_resampled, y_resampled = ros.fit_resample(X, y)
+#### Normal 데이터 샘플링 및 오버 샘플링 추가 끝 ####
 
-# 데이터프레임 생성
-df_resampled = pd.DataFrame(X_resampled, columns=features)
-df_resampled[target] = y_resampled
-### Normal 데이터 샘플링 및 오버 샘플링 추가 끝 ###
+print("num_of_sp : ", num_of_sp)
 
-## 훈련데이터 및 검증데이터 확인
-X_train = df_resampled[features]
-y_train = df_resampled[target]
-
-print("훈련데이터:", X_train.shape, y_train.shape)
+print("훈련데이터:", X_over_resampled.shape, y_over_resampled.shape)
 
 
 ### 머신러닝 모델링 ###
 ## LightGBM
 lgbm = LGBMClassifier(random_state=42,
-                     verbose=1,
+                     verbose=100,
                      max_depth=5,
                      n_estimators=500,
                      learning_rate=0.01,
                      num_leaves=5)
 
-lgbm.fit(X_train, y_train,
+lgbm.fit(X_over_resampled, y_over_resampled,
          eval_set=[(X_val, y_val)])
 
 lgbm_pred = lgbm.predict(X_test)
@@ -173,11 +214,11 @@ print(classification_report(y_test, lgbm_pred))
 cbt = CatBoostClassifier(random_state=42,
                          iterations=500,
                          learning_rate=0.01,
-                         verbose=-1,
+                         verbose=-100,
                          cat_features=['wd_fc_ac', 'dps_fc_ac',
                                        'md_type', 'fnd_type'])
 
-cbt.fit(X_train, y_train, eval_set=[(X_val, y_val)],
+cbt.fit(X_over_resampled, y_over_resampled, eval_set=[(X_val, y_val)],
         use_best_model=True, verbose=True)
 
 cbt_pred = cbt.predict(X_test)
@@ -195,7 +236,7 @@ xgb = XGBClassifier(n_estimators = 500,
                       early_stopping_rounds = 100,
                       seed=42)
 
-xgb.fit(X_train, y_train, eval_set=[(X_val, y_val)])
+xgb.fit(X_over_resampled, y_over_resampled, eval_set=[(X_val, y_val)])
 
 xgb_pred = xgb.predict(X_test)
         
