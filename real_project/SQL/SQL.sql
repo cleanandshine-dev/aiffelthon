@@ -1,31 +1,73 @@
+
+CREATE TABLE dps_fraud_tab AS
+SELECT 
+    dps_fc_ac,
+    tran_dt,
+    tran_tmrg,
+    ff_sp_ai,
+    LAG(COUNT(*)) OVER (PARTITION BY dps_fc_ac ORDER BY tran_dt ) AS prev_dps_fraud_cnt  -- 전일자의 Count
+FROM HF_TRNS_TRAN hf
+WHERE ff_sp_ai = 'SP'
+GROUP BY dps_fc_ac, tran_dt, tran_tmrg
+ORDER BY tran_dt, tran_tmrg, dps_fc_ac;
+
+
+CREATE TABLE wd_fraud_tab AS
+SELECT 
+    wd_fc_ac,
+    tran_dt,
+    tran_tmrg,
+    ff_sp_ai,
+    LAG(COUNT(*)) OVER (PARTITION BY wd_fc_ac ORDER BY tran_dt ) AS prev_wd_fraud_cnt  -- 전일자의 Count
+FROM HF_TRNS_TRAN hf
+WHERE ff_sp_ai = 'SP'
+GROUP BY wd_fc_ac, tran_dt, tran_tmrg
+ORDER BY tran_dt, tran_tmrg, wd_fc_ac;
+
+
+
+
+
+
+
 -- cnt
 SELECT 
-	COUNT(*)
+    COUNT(*)
 FROM HF_TRNS_TRAN AS hf
-    , dps_fnd AS df
-    , dps_md AS dm
-    , wd_fnd AS wf 
-    , wd_md AS wm 
-WHERE hf.dps_fc_ac = df.dps_fc_ac
-and hf.tran_dt = df.tran_dt
-AND hf.tran_tmrg = df.tran_tmrg
-AND hf.fnd_type = df.fnd_type
-AND hf.dps_fc_ac = dm.dps_fc_ac
-and hf.tran_dt = dm.tran_dt
-AND hf.tran_tmrg = dm.tran_tmrg
-AND hf.md_type = dm.md_type
-AND hf.wd_fc_ac = wf.wd_fc_ac
-and hf.tran_dt = wf.tran_dt
-AND hf.tran_tmrg = wf.tran_tmrg
-AND hf.fnd_type = wf.fnd_type
-AND hf.wd_fc_ac = wm.wd_fc_ac
-and hf.tran_dt = wm.tran_dt
-AND hf.tran_tmrg = wm.tran_tmrg
-AND hf.md_type = wm.md_type
-;
-
+INNER JOIN dps_fnd AS df
+    ON hf.dps_fc_ac = df.dps_fc_ac
+    AND hf.tran_dt = df.tran_dt
+    AND hf.tran_tmrg = df.tran_tmrg
+    AND hf.fnd_type = df.fnd_type
+INNER JOIN dps_md AS dm
+    ON hf.dps_fc_ac = dm.dps_fc_ac
+    AND hf.tran_dt = dm.tran_dt
+    AND hf.tran_tmrg = dm.tran_tmrg
+    AND hf.md_type = dm.md_type
+INNER JOIN wd_fnd AS wf
+    ON hf.wd_fc_ac = wf.wd_fc_ac
+    AND hf.tran_dt = wf.tran_dt
+    AND hf.tran_tmrg = wf.tran_tmrg
+    AND hf.fnd_type = wf.fnd_type
+INNER JOIN wd_md AS wm
+    ON hf.wd_fc_ac = wm.wd_fc_ac
+    AND hf.tran_dt = wm.tran_dt
+    AND hf.tran_tmrg = wm.tran_tmrg
+    AND hf.md_type = wm.md_type
+LEFT JOIN dps_fraud_tab AS dps_frd
+    ON hf.dps_fc_ac = dps_frd.dps_fc_ac
+    AND hf.tran_dt = dps_frd.tran_dt
+    AND hf.tran_tmrg = dps_frd.tran_tmrg
+    AND hf.ff_sp_ai = dps_frd.ff_sp_ai
+LEFT JOIN wd_fraud_tab AS wd_frd
+    ON hf.wd_fc_ac = wd_frd.wd_fc_ac
+    AND hf.tran_dt = wd_frd.tran_dt
+    AND hf.tran_tmrg = wd_frd.tran_tmrg
+    AND hf.ff_sp_ai = wd_frd.ff_sp_ai;
 ------- 9947307
 
+CREATE TABLE HF_TRNS_TRAN_tmp_1
+AS 
 SELECT 
 	hf.wd_fc_ac
 	, hf.dps_fc_ac
@@ -42,31 +84,49 @@ SELECT
 	, wf.wd_fc_ac_cnt AS wd_fc_ac_fnd_cnt
 	, wm.wd_fc_ac_tran_amt AS wd_fc_ac_md_amt
 	, wm.wd_fc_ac_cnt AS wd_fc_ac_md_cnt
+	, dps_frd.prev_dps_fraud_cnt
+	, wd_frd.prev_wd_fraud_cnt
 	, hf.ff_sp_ai
-FROM HF_TRNS_TRAN hf
-    , dps_fnd df
-    , dps_md dm
-    , wd_fnd wf 
-    , wd_md wm 
-WHERE hf.dps_fc_ac = df.dps_fc_ac
-and hf.tran_dt = df.tran_dt
-AND hf.tran_tmrg = df.tran_tmrg
-AND hf.fnd_type = df.fnd_type
-AND hf.dps_fc_ac = dm.dps_fc_ac
-and hf.tran_dt = dm.tran_dt
-AND hf.tran_tmrg = dm.tran_tmrg
-AND hf.md_type = dm.md_type
-AND hf.wd_fc_ac = wf.wd_fc_ac
-and hf.tran_dt = wf.tran_dt
-AND hf.tran_tmrg = wf.tran_tmrg
-AND hf.fnd_type = wf.fnd_type
-AND hf.wd_fc_ac = wm.wd_fc_ac
-and hf.tran_dt = wm.tran_dt
-AND hf.tran_tmrg = wm.tran_tmrg
-AND hf.md_type = wm.md_type
-;
-
+FROM HF_TRNS_TRAN AS hf
+INNER JOIN dps_fnd AS df
+    ON hf.dps_fc_ac = df.dps_fc_ac
+    AND hf.tran_dt = df.tran_dt
+    AND hf.tran_tmrg = df.tran_tmrg
+    AND hf.fnd_type = df.fnd_type
+INNER JOIN dps_md AS dm
+    ON hf.dps_fc_ac = dm.dps_fc_ac
+    AND hf.tran_dt = dm.tran_dt
+    AND hf.tran_tmrg = dm.tran_tmrg
+    AND hf.md_type = dm.md_type
+INNER JOIN wd_fnd AS wf
+    ON hf.wd_fc_ac = wf.wd_fc_ac
+    AND hf.tran_dt = wf.tran_dt
+    AND hf.tran_tmrg = wf.tran_tmrg
+    AND hf.fnd_type = wf.fnd_type
+INNER JOIN wd_md AS wm
+    ON hf.wd_fc_ac = wm.wd_fc_ac
+    AND hf.tran_dt = wm.tran_dt
+    AND hf.tran_tmrg = wm.tran_tmrg
+    AND hf.md_type = wm.md_type
+LEFT JOIN dps_fraud_tab AS dps_frd
+    ON hf.dps_fc_ac = dps_frd.dps_fc_ac
+    AND hf.tran_dt = dps_frd.tran_dt
+    AND hf.tran_tmrg = dps_frd.tran_tmrg
+    AND hf.ff_sp_ai = dps_frd.ff_sp_ai
+LEFT JOIN wd_fraud_tab AS wd_frd
+    ON hf.wd_fc_ac = wd_frd.wd_fc_ac
+    AND hf.tran_dt = wd_frd.tran_dt
+    AND hf.tran_tmrg = wd_frd.tran_tmrg
+    AND hf.ff_sp_ai = wd_frd.ff_sp_ai;
+	
+	
+	
+	
 -- dps
+
+
+
+
 create table dps_fnd
 as
 select 
