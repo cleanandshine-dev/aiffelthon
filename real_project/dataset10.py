@@ -30,7 +30,7 @@ class AMLtoGraph(InMemoryDataset):
 
     @property
     def raw_file_names(self) -> str:
-        return 'HF_TRNS_TRAN_new.csv'
+        return 'hf_trns_tran_tmp_1_fraud_cnt_new.csv'
 
     @property
     def processed_file_names(self) -> str:
