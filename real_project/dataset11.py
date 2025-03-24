@@ -131,7 +131,7 @@ class AMLtoGraph(InMemoryDataset):
             'md_type', 'fnd_type',
             'prev_dps_fraud_cnt', 'prev_wd_fraud_cnt',
             'dps_fc_ac_fnd_amt', 'dps_fc_ac_fnd_cnt', 'dps_fc_ac_md_amt', 'dps_fc_ac_md_cnt',
-            'wd_fc_ac_fnd_amt', 'wd_fc_ac_fnd_cnt', 'wd_fc_ac_md_amt', 'wd_fc_ac_md_cnt'
+            'wd_fc_ac_fnd_amt', 'wd_fc_ac_fnd_cnt', 'wd_fc_ac_md_amt', 'wd_fc_ac_md_cnt', 'community'
         ]
         node_attr = torch.tensor(df[node_cols].values, dtype=torch.float)
         node_label = torch.tensor(df['ff_sp_ai'].values, dtype=torch.float)
