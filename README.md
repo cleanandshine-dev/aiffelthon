@@ -73,3 +73,14 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 
 #### 4.5 GNN의 종류
 ![캡처2](https://github.com/user-attachments/assets/c56c5a47-2970-4b8a-8b0e-ac5e1dee8b13)
+
+#### 4.6 GAT (Graph Attention Networks)의 구조 및 간략한 특징
+* 전파 모듈 ( Propagation Modules )
+    * 그래프 내에서 정보를 전달하는 역할을 수행하는 핵심 모듈
+* Attention 메커니즘 활용
+    * 각 노드가 이웃 노드들로부터 받을 정보를 다르게 가중치를 부여하여 학습하는 방식
+    * 여러 개의 어텐션 메커니즘을 병렬 적용하여 안정성과 표현력을 향상 
+    * 최종 출력은 여러 헤드의 평균 또는 연결(Concat)
+* PyG
+    * 메시지 전파(MessagePassing)를 자동으로 처리
+    * 메시지 전달 그래프 신경망을 만드는데 도움이 되는, MessagePassing 기본 클래스 제공
