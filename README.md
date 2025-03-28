@@ -84,3 +84,6 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 * PyG
     * 메시지 전파(MessagePassing)를 자동으로 처리
     * 메시지 전달 그래프 신경망을 만드는데 도움이 되는, MessagePassing 기본 클래스 제공
+
+#### 4.7 GNN 기반 사기 탐지를 위한 그래프 데이터 전처리 및 특성 엔지니어링
+
