@@ -93,6 +93,14 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 
 ##### 4.7.1 피쳐
 ![캡처2](https://github.com/user-attachments/assets/ff383840-72c7-46a3-83fd-fb76ab5f3e0f)
+##### 4.7.1 피쳐 선택
+![캡처2](https://github.com/user-attachments/assets/08afbd9a-115c-4a08-9e08-3ef01e6524e9)
+
+#### 4.8 파라미터조정 및 EDA 결과
+![캡처2](https://github.com/user-attachments/assets/948541b3-5a5d-432d-a863-4818d35d86a4)
+![캡처2](https://github.com/user-attachments/assets/56b0fd27-9473-4eb1-8f7f-cd3977c895f1)
+![캡처2](https://github.com/user-attachments/assets/b38eb28b-b9a6-4e43-ab8a-c13f6391385e)
+![캡처2](https://github.com/user-attachments/assets/a86ee310-35f3-4f5b-808b-1c2e022af9c4)
 
 
 
