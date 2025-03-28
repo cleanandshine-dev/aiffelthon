@@ -39,10 +39,10 @@
 
 ### 4. 프로젝트 수행 과정
 #### 4.1 일정
-![캡처2](https://github.com/user-attachments/assets/e346d75b-7910-4994-9988-17176d73e823)
+
 
 #### 4.2 성능지표
-![캡처2](https://github.com/user-attachments/assets/a339785f-0bb2-4c9a-8bce-6b9a41bc5a50)
+
 
 #### 4.3 일정
 
