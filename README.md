@@ -86,4 +86,5 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
     * 메시지 전달 그래프 신경망을 만드는데 도움이 되는, MessagePassing 기본 클래스 제공
 
 #### 4.7 GNN 기반 사기 탐지를 위한 그래프 데이터 전처리 및 특성 엔지니어링
+![캡처2](https://github.com/user-attachments/assets/7c4d0d7a-dd08-4c4a-b9ad-3dcf0d505afa)
 
