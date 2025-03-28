@@ -164,4 +164,4 @@ GAT 및 GNN의 복잡성
 Top-K 성능평가 활용: 사기 발생 가능성이 높은 상위 K개 거래에 대한 모델의 예측 성능을 집중적으로 평가하여 실제 대응 전략 수립에 활용
 
 Appendix
-[🔗pdf파일 참고](pdf파일주소)
+[🔗pdf파일 참고][(pdf파일주소)](https://github.com/seogideogi/4mula/blob/main/0326_4mula_%EB%8D%B0%EC%9D%B4%ED%84%B0%EC%82%AC%EC%9D%B4%EC%96%B8%ED%8B%B0%EC%8A%A4%ED%8A%B83%EA%B8%B0_%EC%B5%9C%EC%A2%85%EB%B0%9C%ED%91%9C.pdf)
