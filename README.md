@@ -50,6 +50,7 @@
     * 9,947,307
 
 #### 4.2 컬럼 상세
+![캡처2](https://github.com/user-attachments/assets/b76d6b89-eb6a-41fe-89e2-5bfb9a8b3a8c)
 
 
 #### 4.3 데이터 전처리
@@ -71,3 +72,4 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 * 정상거래 99.98 % 인  상당히 불균형한 데이터
 
 #### 4.5 GNN의 종류
+![캡처2](https://github.com/user-attachments/assets/c56c5a47-2970-4b8a-8b0e-ac5e1dee8b13)
