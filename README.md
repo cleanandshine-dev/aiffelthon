@@ -89,8 +89,10 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 ![캡처2](https://github.com/user-attachments/assets/7c4d0d7a-dd08-4c4a-b9ad-3dcf0d505afa)
 
 ##### 4.7.1 거래금액
+![캡처2](https://github.com/user-attachments/assets/0bcb90b3-254c-4c59-9de1-7424f30464cb)
 
 ##### 4.7.1 피쳐
+![캡처2](https://github.com/user-attachments/assets/ff383840-72c7-46a3-83fd-fb76ab5f3e0f)
 
 
 
