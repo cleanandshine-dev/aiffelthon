@@ -19,6 +19,19 @@
 #### 3.3 GNN Model ( GAT )
 ![캡처2](https://github.com/user-attachments/assets/57fcd777-0cf8-45af-acfc-2629d43b132d)
 
-#### 3.3 GAT 아키텍처 상세
-![캡처2](https://github.com/user-attachments/assets/22571aac-a692-4a5d-a25f-4c797cbdbd48)
+#### 3.4 GAT 아키텍처 상세
+![캡처2](https://github.com/user-attachments/assets/55b202f5-9101-4aba-96c7-57f3dfa974ad)
+
+#### 3.5 성능지표
+![캡처2](https://github.com/user-attachments/assets/55c07ef8-999e-47b6-a669-a02e509a0377)
+
+### 4. 프로젝트 수행 과정
+#### 4.1 일정
+![캡처2](https://github.com/user-attachments/assets/e346d75b-7910-4994-9988-17176d73e823)
+
+#### 4.2 일정
+![캡처2](https://github.com/user-attachments/assets/a339785f-0bb2-4c9a-8bce-6b9a41bc5a50)
+
+#### 4.3 일정
+
 
