@@ -178,4 +178,4 @@ GAT와 CatBoost 모델에 datetime형태의 데이터를 직접 입력으로 사
 <br>
 
 ## Appendix
-[🔗최종발표 pdf](https://drive.google.com/drive/u/0/folders/1HKtCd3yKRaUH9TcDUyX4qIQE2lCwleaK)
+[🔗최종발표 pdf](https://drive.google.com/file/d/1fyCyEWK0kCG_nX1GJZfk9orS-gNLoDWd/view?usp=sharing)
